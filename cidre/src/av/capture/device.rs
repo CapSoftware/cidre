@@ -21,6 +21,9 @@ unsafe extern "C-unwind" {
     )]
     static AVCaptureDeviceTypeExternal: &'static Type;
 
+    #[api::available(macos = 10.15)]
+    static AVCaptureDeviceTypeExternalUnknown: &'static Type;
+
     #[api::available(macos = 10.15, ios = 10.0)]
     static AVCaptureDeviceTypeBuiltInMicrophone: &'static Type;
 
@@ -1763,6 +1766,12 @@ impl Type {
     )]
     pub fn external() -> &'static Self {
         unsafe { AVCaptureDeviceTypeExternal }
+    }
+
+    #[doc(alias = "AVCaptureDeviceTypeExternalUnknown")]
+    #[api::available(macos = 10.15)]
+    pub fn external_unknown() -> &'static Self {
+        unsafe { AVCaptureDeviceTypeExternalUnknown }
     }
 
     #[doc(alias = "AVCaptureDeviceTypeBuiltInMicrophone")]
