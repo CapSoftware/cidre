@@ -252,10 +252,10 @@ impl Cfg {
     pub fn set_show_mouse_clicks(&mut self, val: bool);
 
     #[objc::msg_send(backgroundColor)]
-    pub fn background_color(&self) -> cg::Color;
+    pub fn background_color(&self) -> &cg::Color;
 
     #[objc::msg_send(setBackgroundColor:)]
-    pub fn set_background_color(&mut self, val: cg::Color);
+    pub fn set_background_color(&mut self, val: &cg::Color);
 
     #[objc::msg_send(sourceRect)]
     pub fn src_rect(&self) -> cg::Rect;
@@ -567,6 +567,9 @@ define_obj_type!(
     pub Stream(ns::Id)
 );
 
+unsafe impl Send for Stream {}
+unsafe impl Sync for Stream {}
+
 #[objc::protocol(SCStreamOutput)]
 pub trait Output: objc::Obj {
     #[objc::optional]
@@ -648,12 +651,12 @@ impl Stream {
         error: *mut Option<&ns::Error>,
     ) -> bool;
 
-    pub fn add_stream_output<'ar, D: Output>(
+    pub fn add_stream_output<'ear, D: Output>(
         &self,
         output: &D,
         output_type: OutputType,
         queue: Option<&dispatch::Queue>,
-    ) -> ns::Result {
+    ) -> ns::Result<'ear> {
         ns::if_false(|err| unsafe {
             self.add_stream_output_type_sample_handler_queue_err(output, output_type, queue, err)
         })
@@ -671,7 +674,7 @@ impl Stream {
         &self,
         output: &D,
         output_type: OutputType,
-    ) -> ns::Result {
+    ) -> ns::Result<'ear> {
         ns::if_false(|err| unsafe { self.remove_stream_output_err(output, output_type, err) })
     }
 
@@ -755,7 +758,7 @@ impl Stream {
     ) -> bool;
 
     #[api::available(macos = 15.0)]
-    pub fn add_recording_output(&mut self, val: &sc::RecordingOutput) -> ns::Result {
+    pub fn add_recording_output<'ear>(&mut self, val: &sc::RecordingOutput) -> ns::Result<'ear> {
         ns::if_false(|err| unsafe { self.add_recording_output_err(val, err) })
     }
 
@@ -768,7 +771,7 @@ impl Stream {
     ) -> bool;
 
     #[api::available(macos = 15.0)]
-    pub fn remove_recording_output(&mut self, val: &sc::RecordingOutput) -> ns::Result {
+    pub fn remove_recording_output<'ear>(&mut self, val: &sc::RecordingOutput) -> ns::Result<'ear> {
         ns::if_false(|err| unsafe { self.remove_recording_output_err(val, err) })
     }
 }

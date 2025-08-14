@@ -4,12 +4,20 @@ pub mod range;
 pub use range::Mapping as TimeMapping;
 pub use range::Range as TimeRange;
 
+/// An integer time value.
 #[doc(alias = "CMTimeValue")]
 pub type TimeValue = i64;
 
+/// Timescales must be positive.
 #[doc(alias = "CMTimeScale")]
 pub type TimeScale = i32;
 
+/// Note: cm::TIME_SCALE_MAX is NOT a good choice of timescale for movie files.  
+/// (Recommended timescales for movie files range from 600 to 90000.)
+#[doc(alias = "kCMTimeMaxTimescale")]
+pub const TIME_SCALE_MAX: TimeScale = 0x7fffffff;
+
+/// The epoch is typically 0, but you can use a different value — for example to denote a particular iteration of a loop.
 #[doc(alias = "CMTimeEpoch")]
 pub type TimeEpoch = i64;
 
@@ -129,11 +137,6 @@ impl Time {
         unsafe { kCMTimeInvalid }
     }
 
-    #[inline]
-    pub const fn is_indefinite(&self) -> bool {
-        self.is_valid() && (self.flags.0 & TimeFlags::INDEFINITE.0) != 0
-    }
-
     /// ```
     /// use cidre::cm;
     ///
@@ -151,6 +154,7 @@ impl Time {
     ///
     /// assert!(cm::Time::neg_infinity().is_neg_infinity())
     /// ```
+    #[doc(alias = "CMTIME_IS_NEGATIVE_INFINITY")]
     #[inline]
     pub const fn is_neg_infinity(&self) -> bool {
         self.is_valid() && (self.flags.0 & TimeFlags::NEG_INFINITY.0) != 0
@@ -161,15 +165,30 @@ impl Time {
     ///
     /// assert!(cm::Time::infinity().is_pos_infinity());
     /// ```
+    #[doc(alias = "CMTIME_IS_POSITIVE_INFINITY")]
     #[inline]
     pub const fn is_pos_infinity(&self) -> bool {
         self.is_valid() && (self.flags.0 & TimeFlags::POS_INFINITY.0) != 0
     }
 
+    #[doc(alias = "CMTIME_IS_INDEFINITE")]
+    #[inline]
+    pub const fn is_indefinite(&self) -> bool {
+        self.is_valid() && (self.flags.0 & TimeFlags::INDEFINITE.0) != 0
+    }
+
+    #[doc(alias = "CMTIME_IS_NUMERIC")]
     #[inline]
     pub const fn is_numeric(&self) -> bool {
         (self.flags.0 & (TimeFlags::VALID.0 | TimeFlags::IMPLIED_VALUE_FLAGS_MASK.0))
             == TimeFlags::VALID.0
+    }
+
+    /// Returns true if the cm::Time has been rounded, false if it is completely accurate.
+    #[doc(alias = "CMTIME_HAS_BEEN_ROUNDED")]
+    #[inline]
+    pub const fn has_been_rounded(&self) -> bool {
+        self.is_numeric() && (self.flags.0 & TimeFlags::HAS_BEEN_ROUNDED.0) != 0
     }
 
     /// Returns Time from a f64 number of seconds, and a preferred timescale.
@@ -321,6 +340,27 @@ impl PartialEq for Time {
 
 impl Eq for Time {}
 
+impl Ord for Time {
+    #[inline]
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        unsafe { std::mem::transmute(CMTimeCompare(*self, *other) as i8) }
+    }
+
+    fn max(self, other: Self) -> Self
+    where
+        Self: Sized,
+    {
+        Self::max(self, other)
+    }
+
+    fn min(self, other: Self) -> Self
+    where
+        Self: Sized,
+    {
+        Self::min(self, other)
+    }
+}
+
 impl PartialOrd for Time {
     /// ```
     /// use cidre::cm;
@@ -334,7 +374,7 @@ impl PartialOrd for Time {
     /// ```
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        unsafe { std::mem::transmute(CMTimeCompare(*self, *other) as i8) }
+        Some(self.cmp(other))
     }
 }
 
@@ -368,6 +408,15 @@ mod tests {
         assert_eq!(zero.value, 0);
         assert_eq!(zero.epoch, 0);
         assert_eq!(zero.flags, cm::TimeFlags::VALID);
+
+        let zero_epoch_1 = cm::Time::with_epoch(0, 1, 1);
+
+        assert_ne!(zero, zero_epoch_1);
+        assert!(zero < zero_epoch_1);
+        assert!(zero_epoch_1 == zero_epoch_1);
+
+        assert_eq!(zero, zero.min(zero_epoch_1));
+        assert_eq!(zero_epoch_1, zero_epoch_1.min(zero_epoch_1));
     }
 }
 

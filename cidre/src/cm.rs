@@ -43,6 +43,7 @@ pub use tagged_buffer_group::TaggedBufGroup;
 pub use tagged_buffer_group::err as tagged_buf_group_err;
 
 mod time;
+pub use time::TIME_SCALE_MAX;
 pub use time::Time;
 pub use time::TimeEpoch;
 pub use time::TimeFlags;
@@ -56,6 +57,8 @@ pub mod sample_buffer;
 
 #[cfg(feature = "cat")]
 pub use sample_buffer::BlockBufAudioBufList;
+#[cfg(feature = "cat")]
+pub use sample_buffer::BlockBufAudioBufListN;
 pub use sample_buffer::Flags as SampleBufFlags;
 pub use sample_buffer::SampleBuf;
 pub use sample_buffer::SampleTimingInfo;

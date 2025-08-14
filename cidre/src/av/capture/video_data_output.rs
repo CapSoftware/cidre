@@ -53,16 +53,60 @@ impl VideoDataOutput {
 
     /// Indicates whether the receiver automatically configures the size of output buffers.
     #[objc::msg_send(automaticallyConfiguresOutputBufferDimensions)]
-    pub fn automatically_configures_output_buf_dimensions(&self) -> bool;
+    pub fn automatically_configures_output_buf_dims(&self) -> bool;
 
     #[objc::msg_send(setAutomaticallyConfiguresOutputBufferDimensions:)]
-    pub fn set_automatically_configures_output_buf_dimensions(&mut self, value: bool);
+    pub fn set_automatically_configures_output_buf_dims(&mut self, value: bool);
 
     #[objc::msg_send(deliversPreviewSizedOutputBuffers)]
     pub fn delivers_preview_sized_output_bufs(&self) -> bool;
 
+    /// Throws unless automatically_configures_output_buf_dims has been set to false.
     #[objc::msg_send(setDeliversPreviewSizedOutputBuffers:)]
-    pub fn set_delivers_preview_sized_output_bufs(&mut self, value: bool);
+    pub unsafe fn set_delivers_preview_sized_output_bufs_throws(&mut self, value: bool);
+
+    pub fn set_delivers_preview_sized_output_bufs<'ear>(
+        &mut self,
+        value: bool,
+    ) -> ns::ExResult<'ear> {
+        unsafe { ns::try_catch(|| self.set_delivers_preview_sized_output_bufs_throws(value)) }
+    }
+
+    /// Indicates whether the receiver should prepare the cellular radio for imminent network activity.
+    ///
+    /// Apps that scan video data output buffers for information that will result in network activity
+    /// (such as detecting a QRCode containing a URL) should set this property true to allow the cellular
+    /// radio to prepare for an imminent network request. Enabling this property requires a lengthy reconfiguration
+    ///  of the capture render pipeline, so you should set this property to YES before calling -[AVCaptureSession startRunning].
+    ///
+    /// Using this API requires your app to adopt the entitlement `com.apple.developer.avfoundation.video-data-output-prepares-cellular-radio-for-machine-readable-code-scanning`.
+    #[objc::msg_send(preparesCellularRadioForNetworkConnection)]
+    #[objc::available(ios = 26.0, maccatalyst = 26.0, tvos = 26.0)]
+    pub fn prepares_cellular_radio_for_network_connection(&self) -> bool;
+
+    #[objc::msg_send(setPreparesCellularRadioForNetworkConnection:)]
+    #[objc::available(ios = 26.0, maccatalyst = 26.0, tvos = 26.0)]
+    pub fn set_prepares_cellular_radio_for_network_connection(&mut self, val: bool);
+
+    #[objc::msg_send(preservesDynamicHDRMetadata)]
+    #[objc::available(
+        macos = 26.0,
+        ios = 26.0,
+        maccatalyst = 26.0,
+        tvos = 26.0,
+        visionos = 26.0
+    )]
+    pub fn preserves_dynamic_hdr_metadata(&self) -> bool;
+
+    #[objc::msg_send(setPreservesDynamicHDRMetadata:)]
+    #[objc::available(
+        macos = 26.0,
+        ios = 26.0,
+        maccatalyst = 26.0,
+        tvos = 26.0,
+        visionos = 26.0
+    )]
+    pub fn set_preserves_dynamic_hdr_metadata(&mut self, val: bool);
 
     /// Indicates the supported video pixel formats that can be specified in videoSettings.
     ///
@@ -117,6 +161,14 @@ impl VideoDataOutput {
         codec_type: &av::VideoCodec,
         output_file_type: &av::FileType,
     ) -> Option<arc::R<ns::Dictionary<ns::String, ns::Id>>>;
+
+    /// Indicates the recommended media timescale for the video track.
+    ///
+    /// This will return a recommended media timescale based on the active capture session's inputs.
+    /// It will not be less than 600. It may or may not be a multiple of 600.
+    #[objc::msg_send(recommendedMediaTimeScaleForAssetWriter)]
+    #[objc::available(macos = 26.0, ios = 26.0, maccatalyst = 26.0, tvos = 26.0)]
+    pub fn recommended_media_time_scale_for_asset_writer(&self) -> cm::TimeScale;
 }
 
 #[link(name = "av", kind = "static")]
